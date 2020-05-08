@@ -1,7 +1,7 @@
 Masternode Instructions and Notes
 =============================
  - Version 0.3.3
- - Date: 17 jan 2020
+ - Date: 8 may 2020
 
 Prerequisites
 -------------
@@ -18,7 +18,7 @@ Either
 <summary><strong>Download the prebuilt binaries</strong></summary>
 <strong>0.1</strong> Install prebuild client and full chain
 
-    wget https://github.com/SpecialCoins/bitcoincz/releases/download/6.0.3.1/linux-pc.tar.gz
+    wget https://github.com/SpecialCoins/bitcoincz/releases/download/6.0.3.2/linux-pc.tar.gz
     tar xvfz linux-pc.tar.gz
     ---
     (optional to remove old chain):
