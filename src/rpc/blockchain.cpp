@@ -107,7 +107,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("height", blockindex->nHeight));
     result.push_back(Pair("version", block.nVersion));
     result.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
-    result.push_back(Pair("acc_checkpoint", block.nAccumulatorCheckpoint.GetHex()));
     UniValue txs(UniValue::VARR);
     for (const CTransaction& tx : block.vtx) {
         if (txDetails) {
@@ -130,9 +129,6 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     CBlockIndex* pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
-
-    result.push_back(Pair("modifier", strprintf("%016x", blockindex->nStakeModifier)));
-    result.push_back(Pair("modifierV2", blockindex->nStakeModifierV2.GetHex()));
 
     result.push_back(Pair("moneysupply",ValueFromAmount(blockindex->nMoneySupply)));
 
@@ -410,6 +406,44 @@ UniValue clearmempool(const UniValue& params, bool fHelp)
     LOCK(mempool.cs);
     mempool.clear();
     return NullUniValue;
+}
+
+UniValue removetxwallet(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error("removetxwallet <txid>\n" + HelpRequiringPassphrase());
+
+    uint256 hash;
+    hash.SetHex(params[0].get_str());
+
+    if (pwalletMain->IsLocked())
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+
+    pwalletMain->EraseFromWallet(hash);
+    return NullUniValue;
+
+}
+
+UniValue resendwallettransactions(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw std::runtime_error(
+            "resendwallettransactions\n"
+            "Immediately re-broadcast unconfirmed wallet transactions to all peers.\n"
+            "Intended only for testing; the wallet code periodically re-broadcasts\n"
+            "automatically.\n"
+            "Returns array of transaction ids that were re-broadcast.\n"
+            );
+
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+
+    std::vector<uint256> txids = pwalletMain->ResendWalletTransactionsBefore(GetTime());
+    UniValue result(UniValue::VARR);
+    for (const uint256& txid : txids)
+    {
+        result.push_back(txid.ToString());
+    }
+    return result;
 }
 
 UniValue getrawmempool(const UniValue& params, bool fHelp)

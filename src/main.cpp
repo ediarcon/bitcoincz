@@ -2373,7 +2373,7 @@ void ReprocessBlocks(int nBlocks)
     std::map<uint256, int64_t>::iterator it = mapRejectedBlocks.begin();
     while (it != mapRejectedBlocks.end()) {
         //use a window twice as large as is usual for the nBlocks we want to reset
-        if ((*it).second > GetTime() - (nBlocks * Params().TargetSpacing() * 2)) {
+        if ((*it).second > GetTime() - (nBlocks * 60 * 5)) {
             BlockMap::iterator mi = mapBlockIndex.find((*it).first);
             if (mi != mapBlockIndex.end() && (*mi).second) {
                 LOCK(cs_main);
@@ -2972,7 +2972,7 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool f
         return state.DoS(50, error("CheckBlockHeader() : block version must be below 6"),
         REJECT_INVALID, "block-version");
 
-    if (sporkManager.IsSporkActive(SPORK_25_BLOCK_V5) && block.nVersion <= 4)
+    if (block.nVersion <= 4 && block.GetBlockTime() >=1589399021)
             return state.DoS(50, error("CheckBlockHeader() : block version must be above 4"),
             REJECT_INVALID, "block-version");
 
@@ -3076,7 +3076,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
         for (unsigned int i = 2; i < block.vtx.size(); i++)
             if (block.vtx[i].IsCoinStake())
                 return state.DoS(100, error("%s : more than one coinstake", __func__));
-        if (block.vtx[1].vout[1].nValue < 100  && block.GetBlockTime() >= sporkManager.GetSporkValue(SPORK_28_MIN_STAKING))
+        if (block.vtx[1].vout[1].nValue < 100)
             return state.DoS(100, error("CheckBlock() : stake under min. stake value"));
 
     }
@@ -4593,13 +4593,11 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // BCZ: We use certain sporks during IBD, so check to see if they are
         // available. If not, ask the first peer connected for them.
         // TODO: Move this to an instant broadcast of the sporks.
-        bool fMissingSporks = !pSporkDB->SporkExists(SPORK_27_NODE_V_NEW) ||
-                              !pSporkDB->SporkExists(SPORK_29_NODE_V_NEW2) ||
+        bool fMissingSporks = !pSporkDB->SporkExists(SPORK_29_NODE_V_NEW2) ||
                               !pSporkDB->SporkExists(SPORK_21_MASTERNODE_PAYMENT_ENFORCEMENT) ||
                               !pSporkDB->SporkExists(SPORK_22_MASTERNODE_PAYMENT) ||
                               !pSporkDB->SporkExists(SPORK_23_F_PAYMENT) ||
                               !pSporkDB->SporkExists(SPORK_24_F_PAYMENT_ENFORCEMENT) ||
-                              !pSporkDB->SporkExists(SPORK_25_BLOCK_V5) ||
                               !pSporkDB->SporkExists(SPORK_26_COLDSTAKING_ENFORCEMENT);
 
         if (fMissingSporks || !fRequestedSporksIDB){
@@ -5607,7 +5605,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // timeout. We compensate for in-flight blocks to prevent killing off peers due to our own downstream link
         // being saturated. We only count validated in-flight blocks so peers can't advertise nonexisting block hashes
         // to unreasonably increase our timeout.
-        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * Params().TargetSpacing() * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
+        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * 150 * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
             LogPrintf("Timeout downloading block %s from peer=%d, disconnecting\n", state.vBlocksInFlight.front().hash.ToString(), pto->id);
             pto->fDisconnect = true;
         }

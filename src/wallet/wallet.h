@@ -417,7 +417,8 @@ public:
 
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false, bool fromStartup = false);
     void ReacceptWalletTransactions(bool fFirstLoad = false);
-    void ResendWalletTransactions();
+    void ResendWalletTransactions(int64_t nBestBlockTime);
+    std::vector<uint256> ResendWalletTransactionsBefore(int64_t nTime);
 
     CAmount loopTxsBalance(std::function<void(const uint256&, const CWalletTx&, CAmount&)>method) const;
     CAmount GetBalance(bool fIncludeDelegated = true) const;
@@ -818,7 +819,7 @@ public:
     int64_t GetTxTime() const;
     void UpdateTimeSmart();
     int GetRequestCount() const;
-    void RelayWalletTransaction(std::string strCommand = "tx");
+    bool RelayWalletTransaction(std::string strCommand = "tx");
     std::set<uint256> GetConflicts() const;
 };
 
